@@ -1,0 +1,5 @@
+io: use "core.io"
+
+main(): void = {
+    io.out.writeLine("Hello world!")
+}

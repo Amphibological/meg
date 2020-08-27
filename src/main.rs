@@ -25,14 +25,20 @@ fn main() -> std::io::Result<()> {
     println!("Lexer output:\n");
     let mut lexer = lexer::Lexer::new(&contents, errors.borrow_mut());
     let results = lexer.go();
+    for token in &results {
+        println!("{:?}", token);
+    }
+    drop(lexer);
 
     println!("Parser output:\n");
     let mut parser = parser::Parser::new(&results, errors.borrow_mut());
     let results = parser.go();
+    drop(parser);
 
     println!("IR output:\n");
     let mut ir_generator = ir::IRGenerator::new(&results, errors.borrow_mut());
-    let results = ir_generator.go();
+    let _results = ir_generator.go();
+    drop(ir_generator);
 
     // TODO: more here...
 

@@ -16,13 +16,13 @@ pub enum Node {
 }
 
 pub struct Parser<'p> {
-    tokens: &'p [Token<'p>],
+    tokens: &'p [Token],
     index: usize,
     errors: RefMut<'p, Errors>,
 }
 
 impl<'p> Parser<'p> {
-    pub fn new(tokens: &'p [Token<'p>], errors: RefMut<'p, Errors>) -> Self {
+    pub fn new(tokens: &'p [Token], errors: RefMut<'p, Errors>) -> Self {
         Parser {
             tokens,
             index: 0,
