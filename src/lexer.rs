@@ -24,6 +24,8 @@ pub enum TokenKind {
     Equals,
     Comma,
 
+    If,
+
     Newline,
     EOF,
 }
@@ -65,6 +67,7 @@ impl<'l> Lexer<'l> {
 
     pub fn go(&mut self) -> Vec<Token> {
         let mut token = vec![];
+        let mut start_position = 0usize;
         let mut tokens = vec![];
 
         loop {
@@ -82,9 +85,11 @@ impl<'l> Lexer<'l> {
                     
                     } else if ch == '"' {
                         self.state = LexerState::String;
+                        start_position = self.index;
                     } else if ch.is_digit(10) {
                         token.push(ch);   
                         self.state = LexerState::Integer;
+                        start_position = self.index;
                     } else if is_special(ch) {
                         tokens.push(Token {
                             kind: match ch {
@@ -105,9 +110,11 @@ impl<'l> Lexer<'l> {
                     } else if ch.is_ascii_punctuation() {
                         token.push(ch);
                         self.state = LexerState::Operator;
+                        start_position = self.index;
                     } else if ch.is_alphabetic() || ch == '_' {
                         token.push(ch);
                         self.state = LexerState::Identifier;
+                        start_position = self.index;
                     } else {
                         self.errors.lexer(
                             format!("Found invalid character {} ({})", ch, ch),
@@ -125,7 +132,7 @@ impl<'l> Lexer<'l> {
                         tokens.push(Token {
                             kind: TokenKind::IntegerLiteral,
                             value: String::from_iter(token.clone()),
-                            position: 0,
+                            position: start_position,
                         });
                         token.clear();
                         self.state = LexerState::Normal;
@@ -133,14 +140,16 @@ impl<'l> Lexer<'l> {
                     }
                 }
                 LexerState::Float => {
-                    if ch.is_digit(10) { token.push(ch); } else if ch == '.' {
+                    if ch.is_digit(10) {
+                        token.push(ch);
+                    } else if ch == '.' {
                         self.state = LexerState::Normal;
                         continue;
                     } else {
                         tokens.push(Token {
                             kind: TokenKind::FloatLiteral,
                             value: String::from_iter(token.clone()),
-                            position: 0,
+                            position: start_position,
                         });
                         token.clear();
                         self.state = LexerState::Normal;
@@ -153,7 +162,7 @@ impl<'l> Lexer<'l> {
                         tokens.push(Token {
                             kind: TokenKind::StringLiteral,
                             value: String::from_iter(token.clone()),
-                            position: 0,
+                            position: start_position,
                         });
                         token.clear();
                         self.state = LexerState::Normal;
@@ -171,7 +180,7 @@ impl<'l> Lexer<'l> {
                         tokens.push(Token {
                             kind: TokenKind::Operator,
                             value: String::from_iter(token.clone()),
-                            position: 0,
+                            position: start_position,
                         });
                         token.clear();
                         self.state = LexerState::Normal;
@@ -182,11 +191,11 @@ impl<'l> Lexer<'l> {
                     if ch.is_alphanumeric() || ch == '_' {
                         token.push(ch);
                     } else {
-                        tokens.push(Token {
+                        tokens.push(try_convert_keyword(String::from_iter(token.clone()), start_position).unwrap_or(Token {
                             kind: TokenKind::Identifier,
                             value: String::from_iter(token.clone()),
-                            position: 0,
-                        });
+                            position: start_position,
+                        }));
                         token.clear();
                         self.state = LexerState::Normal;
                         continue;
@@ -222,4 +231,15 @@ impl<'l> Lexer<'l> {
 
 fn is_special(ch: char) -> bool {
     ['(', ')', '[', ']', '{', '}', ':', '=', ','].contains(&ch)
+}
+
+fn try_convert_keyword(s: String, position: usize) -> Option<Token> {
+    Some(Token {
+        kind: match s.as_str() {
+            "if" => TokenKind::If, 
+            _ => return None,
+        },
+        value: s,
+        position,
+    })
 }
