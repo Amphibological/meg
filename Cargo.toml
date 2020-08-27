@@ -3,6 +3,11 @@ name = "meg"
 version = "0.1.0"
 authors = ["James Chiella <james.chiella@gmail.com>"]
 edition = "2018"
+description = "A new programming language."
+documentation = "https://github.com/Amphibological/meg/wiki"
+readme = "https://github.com/Amphibological/meg/blob/master/README.md"
+repository = "https://github.com/Amphibological/meg"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
