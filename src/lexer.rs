@@ -5,7 +5,7 @@ use std::iter::FromIterator;
 
 use crate::errors::Errors;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TokenKind {
     StringLiteral,
     IntegerLiteral,
@@ -30,7 +30,7 @@ pub enum TokenKind {
     EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub value: String,
@@ -72,7 +72,6 @@ impl<'l> Lexer<'l> {
 
         loop {
             let ch = *self.code.get(self.index).unwrap_or(&'\0');
-
             match self.state {
                 LexerState::Normal => {
                     if ch == '\n' {
@@ -81,7 +80,7 @@ impl<'l> Lexer<'l> {
                             value: "\n".to_owned(),
                             position: self.index,
                         });
-                    } else if ch.is_whitespace() || ch == '\0' {
+                    } else if ch.is_whitespace() {
                     
                     } else if ch == '"' {
                         self.state = LexerState::String;
@@ -169,6 +168,8 @@ impl<'l> Lexer<'l> {
                     } else if ch == '\\' {
                         token.push(ch);
                         self.state = LexerState::Escape;
+                    } else if ch == '\0' {
+
                     } else {
                         token.push(ch);
                     }
@@ -242,4 +243,65 @@ fn try_convert_keyword(s: String, position: usize) -> Option<Token> {
         value: s,
         position,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use super::*;
+
+    fn lexer_results(contents: &'static str) -> Vec<Token> {
+        let errors = RefCell::new(crate::errors::Errors::new());
+        let mut lexer = Lexer::new(&contents, errors.borrow_mut());
+        lexer.go()
+    }
+
+    fn lexer_errors(contents: &'static str) -> Vec<crate::errors::Error> {
+        let errors = RefCell::new(crate::errors::Errors::new());
+        {
+            let mut lexer = Lexer::new(&contents, errors.borrow_mut());
+            let _ = lexer.go();
+        }
+        let borrowed = errors.borrow();
+        borrowed.errors.clone()
+    }
+
+    #[test]
+    fn string_literal() {
+        assert_eq!(lexer_results(r#""hello world" more_stuff"#), vec![
+            Token {
+                kind: TokenKind::StringLiteral,
+                value: "hello world".to_owned(),
+                position: 0,
+            },
+            Token {
+                kind: TokenKind::Identifier,
+                value: "more_stuff".to_owned(),
+                position: 14,
+            },
+            Token {
+                kind: TokenKind::EOF,
+                value: "".to_owned(),
+                position: 24,
+            },
+        ]);
+    }
+
+    #[test]
+    fn string_literal_ends_too_early() {
+        assert_eq!(lexer_results(r#""hello world more_stuff"#), vec![
+            Token {
+                kind: TokenKind::EOF,
+                value: "".to_owned(),
+                position: 23,
+            }
+        ]);
+        assert_eq!(lexer_errors(r#""hello world more_stuff"#), vec![
+            crate::errors::Error::Lexer {
+                message: "Found EOF while parsing a string literal \"hello world more_stuff\"".to_owned(),
+                position: 23,
+            }
+        ]);
+    }
 }
