@@ -1,7 +1,7 @@
-if x < 2 {
-    x + 100
-} elif x > 4 {
-    zoop: n8 = 10
-} else {
-    y:= 1000
+while x < 10 {
+    debug("Hi there")
+}
+
+loop {
+    debug("whoops")
 }

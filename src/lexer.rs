@@ -29,6 +29,8 @@ pub enum TokenKind {
     If,
     Elif,
     Else,
+    While,
+    Loop,
 
     Newline,
     EOF,
@@ -249,6 +251,8 @@ fn try_convert_keyword(s: String, position: usize) -> Option<Token> {
             "if" => TokenKind::If,
             "elif" => TokenKind::Elif,
             "else" => TokenKind::Else,
+            "while" => TokenKind::While,
+            "loop" => TokenKind::Loop,
             _ => return None,
         },
         value: s,

@@ -13,6 +13,7 @@ pub enum Type {
     FloatLiteral,
     StrLiteral,
     Undefined,
+    Bool,
 }
 
 #[derive(Debug)]
@@ -73,6 +74,10 @@ pub enum Node {
         condition: Box<NodeContext>,
         then_body: Box<NodeContext>,
         else_body: Box<NodeContext>,
+    },
+    WhileExpression {
+        condition: Box<NodeContext>,
+        body: Box<NodeContext>,
     },
 }
 
@@ -253,6 +258,26 @@ impl<'p> Parser<'p> {
         }))
     }
 
+    fn while_expression(&mut self) -> Option<NodeContext> {
+        let condition = self.expr(0)?;
+        let body = self.expr(0)?;
+
+        Some(self.in_context(false, Node::WhileExpression {
+            condition: Box::new(condition),
+            body: Box::new(body),
+        }))
+    }
+
+    fn loop_expression(&mut self) -> Option<NodeContext> {
+        let condition = self.in_context(true, Node::Literal { typ: Type::Bool, value: "true".to_owned() });
+        let body = self.expr(0)?;
+
+        Some(self.in_context(false, Node::WhileExpression {
+            condition: Box::new(condition),
+            body: Box::new(body),
+        }))
+    }
+
     fn expr(&mut self, min_bp: u8) -> Option<NodeContext> {
         let mut left = match self.consume() {
             Token {
@@ -285,7 +310,7 @@ impl<'p> Parser<'p> {
             Token {
                 kind: TokenKind::IntegerLiteral,
                 value: int,
-                position,
+                ..
             } => self.in_context(true, Node::Literal {
                 typ: Type::IntLiteral,
                 value: int,
@@ -293,7 +318,7 @@ impl<'p> Parser<'p> {
             Token {
                 kind: TokenKind::FloatLiteral,
                 value: float,
-                position,
+                ..
             } => self.in_context(true, Node::Literal {
                 typ: Type::FloatLiteral,
                 value: float,
@@ -301,7 +326,7 @@ impl<'p> Parser<'p> {
             Token {
                 kind: TokenKind::StringLiteral,
                 value: s,
-                position,
+                ..
             } => self.in_context(true, Node::Literal {
                 typ: Type::StrLiteral,
                 value: s,
@@ -317,7 +342,7 @@ impl<'p> Parser<'p> {
             Token {
                 kind: TokenKind::Operator,
                 value: op,
-                position,
+                ..
             } => {
                 let ((), right_bp) = prefix_binding_power(&op);
                 let right = self.expr(right_bp)?;
@@ -332,7 +357,7 @@ impl<'p> Parser<'p> {
             } => {
                 while self.try_consume_of_kind(TokenKind::Newline).is_some() { }
                 let block = self.go()?;
-                while self.try_consume_of_kind(TokenKind::Newline).is_some() { }
+                //while self.try_consume_of_kind(TokenKind::Newline).is_some() { }
                 block
             },
             Token {
@@ -340,6 +365,18 @@ impl<'p> Parser<'p> {
                 ..
             } => {
                 self.if_expression()?
+            },
+            Token {
+                kind: TokenKind::While,
+                ..
+            } => {
+                self.while_expression()?
+            },
+            Token {
+                kind: TokenKind::Loop,
+                ..
+            } => {
+                self.loop_expression()?
             },
             Token {
                 kind: TokenKind::EOF,
@@ -357,19 +394,9 @@ impl<'p> Parser<'p> {
         loop {
             let peeked = self.peek();
             let op = match peeked.kind {
-                TokenKind::EOF
-                | TokenKind::Newline
-                | TokenKind::RParen
-                | TokenKind::RBracket
-                | TokenKind::Comma
-                | TokenKind::Equals
-                | TokenKind::LBrace
-                | TokenKind::RBrace 
-                | TokenKind::Elif
-                | TokenKind::Else => break,
                 TokenKind::Operator => peeked.value,
                 TokenKind::LBracket => "[".to_owned(),
-                t => panic!("Bad token: {:?}", t),
+                _ => break,
             };
 
             if let Some((left_bp, ())) = postfix_binding_power(&op) {
