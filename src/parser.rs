@@ -240,6 +240,8 @@ impl<'p> Parser<'p> {
         let else_body;
         if self.try_consume_of_kind(TokenKind::Else).is_some() {
             else_body = self.expr(0)?;
+        } else if self.try_consume_of_kind(TokenKind::Elif).is_some() {
+            else_body = self.if_expression()?;
         } else {
             else_body = self.in_context(true, Node::Literal { typ: Type::Undefined, value: "undef".to_owned() });
         }
@@ -363,6 +365,7 @@ impl<'p> Parser<'p> {
                 | TokenKind::Equals
                 | TokenKind::LBrace
                 | TokenKind::RBrace 
+                | TokenKind::Elif
                 | TokenKind::Else => break,
                 TokenKind::Operator => peeked.value,
                 TokenKind::LBracket => "[".to_owned(),

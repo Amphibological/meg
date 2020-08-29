@@ -1,5 +1,7 @@
 if x < 2 {
     x + 100
+} elif x > 4 {
+    zoop: n8 = 10
 } else {
     y:= 1000
 }
