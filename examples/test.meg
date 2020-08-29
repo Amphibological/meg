@@ -1,7 +1,2 @@
-while x < 10 {
-    debug("Hi there")
-}
-
-loop {
-    debug("whoops")
-}
+x: i32 = 10
+x = 1000

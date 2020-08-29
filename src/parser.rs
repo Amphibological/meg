@@ -79,6 +79,10 @@ pub enum Node {
         condition: Box<NodeContext>,
         body: Box<NodeContext>,
     },
+    Assignment {
+        name: String,
+        value: Box<NodeContext>,
+    }
 }
 
 #[derive(Debug)]
@@ -156,11 +160,15 @@ impl<'p> Parser<'p> {
     pub fn go(&mut self) -> Option<NodeContext> {
         let mut nodes = vec![];
         loop {
-            if self.tokens[self.index + 1].kind == TokenKind::Colon {
-                nodes.push(self.declaration()?);
-            } else {
-                nodes.push(self.expr(0)?);
-            }
+            nodes.push(
+                if self.tokens[self.index + 1].kind == TokenKind::Colon {
+                    self.declaration()?
+                } else if self.tokens[self.index + 1].kind == TokenKind::Equals {
+                    self.assignment()?
+                } else {
+                    self.expr(0)?
+                }
+            );
             if self.try_consume_of_kind(TokenKind::EOF).is_some() {
                 break;
             }
@@ -236,6 +244,17 @@ impl<'p> Parser<'p> {
                 decl_type,
             }))
         }
+    }
+
+    fn assignment(&mut self) -> Option<NodeContext> {
+        let name = self.consume_identifier()?;
+        self.consume_of_kind(TokenKind::Equals)?;
+        let value = self.expr(0)?;
+
+        Some(self.in_context(false, Node::Assignment {
+            name,
+            value: Box::new(value),
+        }))
     }
 
     fn if_expression(&mut self) -> Option<NodeContext> {
