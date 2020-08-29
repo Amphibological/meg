@@ -1,4 +1,5 @@
-mut woop: i8 = 10
-const hello: i16 = 10000
-hi := 10
-bye: i8
+if x < 2 {
+    x + 100
+} else {
+    y:= 1000
+}

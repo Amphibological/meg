@@ -12,6 +12,7 @@ pub enum Type {
     IntLiteral,
     FloatLiteral,
     StrLiteral,
+    Undefined,
 }
 
 #[derive(Debug)]
@@ -67,7 +68,12 @@ pub enum Node {
         ret_type: Box<NodeContext>,
         body: Box<NodeContext>,
         decl_type: DeclarationType,
-    }
+    },
+    IfExpression {
+        condition: Box<NodeContext>,
+        then_body: Box<NodeContext>,
+        else_body: Box<NodeContext>,
+    },
 }
 
 #[derive(Debug)]
@@ -100,6 +106,19 @@ impl<'p> Parser<'p> {
     }
 
     fn consume_of_kind(&mut self, kind: TokenKind) -> Option<Token> {
+        let peeked = self.peek();
+        if peeked.kind == kind {
+            Some(self.consume())
+        } else {
+            self.errors.parser(
+                format!("Expected token {:?}, but found {:?} instead", kind, peeked.kind),
+                peeked.position,
+            );
+            None
+        }
+    }
+
+    fn try_consume_of_kind(&mut self, kind: TokenKind) -> Option<Token> {
         if self.peek().kind == kind {
             Some(self.consume())
         } else {
@@ -132,33 +151,36 @@ impl<'p> Parser<'p> {
     pub fn go(&mut self) -> Option<NodeContext> {
         let mut nodes = vec![];
         loop {
-            nodes.push(self.declaration().or_else(|| self.expr(0))?);
-            if self.consume_of_kind(TokenKind::EOF).is_some() {
+            if self.tokens[self.index + 1].kind == TokenKind::Colon {
+                nodes.push(self.declaration()?);
+            } else {
+                nodes.push(self.expr(0)?);
+            }
+            if self.try_consume_of_kind(TokenKind::EOF).is_some() {
                 break;
             }
             self.consume_of_kind(TokenKind::Newline)?;
-            if self.consume_of_kind(TokenKind::EOF).is_some() {
+            if self.try_consume_of_kind(TokenKind::RBrace).is_some() {
+                break;
+            }
+            if self.try_consume_of_kind(TokenKind::EOF).is_some() {
                 break;
             }
         }
 
-        Some(NodeContext {
-            node: Node::Block { nodes },
-            position: 0,
-            constant: false,
-        })
+        Some(self.in_context(false, Node::Block { nodes }))
     }
 
     fn declaration(&mut self) -> Option<NodeContext> {
         let mut decl_type = DeclarationType::Normal;
-        if self.consume_of_kind(TokenKind::Const).is_some() {
+        if self.try_consume_of_kind(TokenKind::Const).is_some() {
             decl_type = DeclarationType::Constant;
-        } else if self.consume_of_kind(TokenKind::Mut).is_some() {
+        } else if self.try_consume_of_kind(TokenKind::Mut).is_some() {
             decl_type = DeclarationType::Mutable;
         }
 
         let name = self.consume_identifier()?;        
-        if self.consume_of_kind(TokenKind::LParen).is_some() {
+        if self.try_consume_of_kind(TokenKind::LParen).is_some() {
             let mut arg_names = vec![];
             let mut arg_types = vec![];
 
@@ -166,16 +188,16 @@ impl<'p> Parser<'p> {
                 arg_names.push(self.consume_identifier()?);
                 self.consume_of_kind(TokenKind::Colon);
                 arg_types.push(self.expr(0)?);
-                if self.consume_of_kind(TokenKind::Comma).is_none() {
+                if self.try_consume_of_kind(TokenKind::Comma).is_none() {
                     break;
                 }
             }
             self.consume_of_kind(TokenKind::RParen)?;
 
-            self.consume_of_kind(TokenKind::Colon);
+            self.consume_of_kind(TokenKind::Colon)?;
             let ret_type = self.expr(0)?;
 
-            self.consume_of_kind(TokenKind::Equals);
+            self.consume_of_kind(TokenKind::Equals)?;
             let body = self.expr(0)?;
             Some(self.in_context(true, Node::FunctionDeclaration {
                 name,
@@ -191,12 +213,12 @@ impl<'p> Parser<'p> {
 
             self.consume_of_kind(TokenKind::Colon)?;
 
-            if self.consume_of_kind(TokenKind::Equals).is_some() {
+            if self.try_consume_of_kind(TokenKind::Equals).is_some() {
                 typ = None;
                 body = Some(self.expr(0)?);
             } else {
                 typ = Some(self.expr(0)?);
-                if self.consume_of_kind(TokenKind::Equals).is_some() {
+                if self.try_consume_of_kind(TokenKind::Equals).is_some() {
                     body = Some(self.expr(0)?);
                 } else {
                     body = None;
@@ -209,6 +231,24 @@ impl<'p> Parser<'p> {
                 decl_type,
             }))
         }
+    }
+
+    fn if_expression(&mut self) -> Option<NodeContext> {
+        // if doesn't actually consume an if cause it is done for it before calling
+        let condition = self.expr(0)?;
+        let then_body = self.expr(0)?;
+        let else_body;
+        if self.try_consume_of_kind(TokenKind::Else).is_some() {
+            else_body = self.expr(0)?;
+        } else {
+            else_body = self.in_context(true, Node::Literal { typ: Type::Undefined, value: "undef".to_owned() });
+        }
+
+        Some(self.in_context(false, Node::IfExpression {
+            condition: Box::new(condition),
+            then_body: Box::new(then_body),
+            else_body: Box::new(else_body),
+        }))
     }
 
     fn expr(&mut self, min_bp: u8) -> Option<NodeContext> {
@@ -283,7 +323,22 @@ impl<'p> Parser<'p> {
                     op,
                     right: Box::new(right),
                 })
-            }
+            },
+            Token {
+                kind: TokenKind::LBrace,
+                ..
+            } => {
+                while self.try_consume_of_kind(TokenKind::Newline).is_some() { }
+                let block = self.go()?;
+                while self.try_consume_of_kind(TokenKind::Newline).is_some() { }
+                block
+            },
+            Token {
+                kind: TokenKind::If,
+                ..
+            } => {
+                self.if_expression()?
+            },
             Token {
                 kind: TokenKind::EOF,
                 position,
@@ -307,7 +362,8 @@ impl<'p> Parser<'p> {
                 | TokenKind::Comma
                 | TokenKind::Equals
                 | TokenKind::LBrace
-                | TokenKind::RBrace => break,
+                | TokenKind::RBrace 
+                | TokenKind::Else => break,
                 TokenKind::Operator => peeked.value,
                 TokenKind::LBracket => "[".to_owned(),
                 t => panic!("Bad token: {:?}", t),

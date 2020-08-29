@@ -26,6 +26,9 @@ pub enum TokenKind {
 
     Const,
     Mut,
+    If,
+    Elif,
+    Else,
 
     Newline,
     EOF,
@@ -84,7 +87,7 @@ impl<'l> Lexer<'l> {
                             value: "\n".to_owned(),
                             position: self.index,
                         });
-                    } else if ch.is_whitespace() {
+                    } else if ch.is_whitespace() || ch == '\0' {
                     
                     } else if ch == '"' {
                         self.state = LexerState::String;
@@ -243,6 +246,9 @@ fn try_convert_keyword(s: String, position: usize) -> Option<Token> {
         kind: match s.as_str() {
             "const" => TokenKind::Const,
             "mut" => TokenKind::Mut,
+            "if" => TokenKind::If,
+            "elif" => TokenKind::Elif,
+            "else" => TokenKind::Else,
             _ => return None,
         },
         value: s,

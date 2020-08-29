@@ -30,11 +30,21 @@ fn main() -> std::io::Result<()> {
     }
     drop(lexer);
 
+    println!("Lexer errors:\n");
+    for error in &errors.borrow().errors {
+        println!("{:?}", error);
+    }
+
     println!("Parser output:\n");
     let mut parser = parser::Parser::new(&results, errors.borrow_mut());
     let results = parser.go();
     println!("{:#?}", results);
     drop(parser);
+
+    println!("Parser errors:\n");
+    for error in &errors.borrow().errors {
+        println!("{:?}", error);
+    }
 
     println!("IR output:\n");
     let unwrapped = results.unwrap();
