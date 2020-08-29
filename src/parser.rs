@@ -47,6 +47,18 @@ pub enum Node {
     VariableRef {
         name: String,
     },
+    Declaration {
+        name: String,
+        typ: Box<NodeContext>,
+        body: Box<NodeContext>,
+    },
+    FunctionDeclaration {
+        name: String,
+        arg_types: Vec<NodeContext>,
+        arg_names: Vec<String>,
+        ret_type: Box<NodeContext>,
+        body: Box<NodeContext>,
+    }
 }
 
 #[derive(Debug)]
@@ -86,13 +98,19 @@ impl<'p> Parser<'p> {
         }
     }
 
+    fn consume_identifier(&mut self) -> Option<String> {
+        if self.peek().kind == TokenKind::Identifier {
+            Some(self.consume().value)
+        } else {
+            None
+        }
+    }
+
     fn peek(&self) -> Token {
         self.tokens[self.index].clone()
     }
 
-    fn save_source_position(&mut self) {
-        self.source_position = self.peek().position;
-    }
+    // TODO source_position needs to be properly saved and restored
 
     fn in_context(&mut self, constant: bool, node: Node) -> NodeContext {
         NodeContext {
@@ -105,7 +123,7 @@ impl<'p> Parser<'p> {
     pub fn go(&mut self) -> Option<NodeContext> {
         let mut nodes = vec![];
         loop {
-            nodes.push(self.expr(0)?);
+            nodes.push(self.declaration().or_else(|| self.expr(0))?);
             if self.consume_of_kind(TokenKind::EOF).is_some() {
                 break;
             }
@@ -122,12 +140,53 @@ impl<'p> Parser<'p> {
         })
     }
 
+    fn declaration(&mut self) -> Option<NodeContext> {
+        let name = self.consume_identifier()?;        
+        if self.consume_of_kind(TokenKind::LParen).is_some() {
+            let mut arg_names = vec![];
+            let mut arg_types = vec![];
+
+            loop {
+                arg_names.push(self.consume_identifier()?);
+                self.consume_of_kind(TokenKind::Colon);
+                arg_types.push(self.expr(0)?);
+                if self.consume_of_kind(TokenKind::Comma).is_none() {
+                    break;
+                }
+            }
+            self.consume_of_kind(TokenKind::RParen)?;
+
+            self.consume_of_kind(TokenKind::Colon);
+            let ret_type = self.expr(0)?;
+
+            self.consume_of_kind(TokenKind::Equals);
+            let body = self.expr(0)?;
+            Some(self.in_context(true, Node::FunctionDeclaration {
+                name,
+                arg_types,
+                arg_names,
+                ret_type: Box::new(ret_type),
+                body: Box::new(body),
+            }))
+        } else {
+            self.consume_of_kind(TokenKind::Colon);
+            let typ = self.expr(0)?;
+            self.consume_of_kind(TokenKind::Equals);
+            let body = self.expr(0)?;
+            Some(self.in_context(true, Node::Declaration {
+                name,
+                typ: Box::new(typ),
+                body: Box::new(body),
+            }))
+        }
+    }
+
     fn expr(&mut self, min_bp: u8) -> Option<NodeContext> {
         let mut left = match self.consume() {
             Token {
                 kind: TokenKind::Identifier,
                 value: id,
-                position,
+                ..
             } => {
                 if self.peek().kind == TokenKind::LParen {
                     self.consume(); // pass the LParen;
@@ -216,6 +275,7 @@ impl<'p> Parser<'p> {
                 | TokenKind::RParen
                 | TokenKind::RBracket
                 | TokenKind::Comma
+                | TokenKind::Equals
                 | TokenKind::LBrace
                 | TokenKind::RBrace => break,
                 TokenKind::Operator => peeked.value,

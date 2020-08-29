@@ -68,13 +68,16 @@ impl<'l> Lexer<'l> {
     pub fn go(&mut self) -> Vec<Token> {
         let mut token = vec![];
         let mut start_position = 0usize;
-        let mut tokens = vec![];
+        let mut tokens: Vec<Token> = vec![];
 
         loop {
             let ch = *self.code.get(self.index).unwrap_or(&'\0');
             match self.state {
                 LexerState::Normal => {
-                    if ch == '\n' {
+                    if ch == '\n' && tokens.last()
+                        .map(|t| t.kind.clone())
+                        .unwrap_or(TokenKind::Newline) != TokenKind::Newline {
+
                         tokens.push(Token {
                             kind: TokenKind::Newline,
                             value: "\n".to_owned(),
