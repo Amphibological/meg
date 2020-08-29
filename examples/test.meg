@@ -1,2 +1,4 @@
-fun(n: i8): bool = n + 10
-
+mut woop: i8 = 10
+const hello: i16 = 10000
+hi := 10
+bye: i8

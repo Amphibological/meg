@@ -24,7 +24,8 @@ pub enum TokenKind {
     Equals,
     Comma,
 
-    If,
+    Const,
+    Mut,
 
     Newline,
     EOF,
@@ -240,7 +241,8 @@ fn is_special(ch: char) -> bool {
 fn try_convert_keyword(s: String, position: usize) -> Option<Token> {
     Some(Token {
         kind: match s.as_str() {
-            "if" => TokenKind::If, 
+            "const" => TokenKind::Const,
+            "mut" => TokenKind::Mut,
             _ => return None,
         },
         value: s,

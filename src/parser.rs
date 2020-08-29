@@ -15,6 +15,13 @@ pub enum Type {
 }
 
 #[derive(Debug)]
+pub enum DeclarationType {
+    Normal,
+    Constant,
+    Mutable,
+}
+
+#[derive(Debug)]
 pub enum Node {
     Block {
         nodes: Vec<NodeContext>,
@@ -49,8 +56,9 @@ pub enum Node {
     },
     Declaration {
         name: String,
-        typ: Box<NodeContext>,
-        body: Box<NodeContext>,
+        typ: Box<Option<NodeContext>>,
+        body: Box<Option<NodeContext>>,
+        decl_type: DeclarationType,
     },
     FunctionDeclaration {
         name: String,
@@ -58,6 +66,7 @@ pub enum Node {
         arg_names: Vec<String>,
         ret_type: Box<NodeContext>,
         body: Box<NodeContext>,
+        decl_type: DeclarationType,
     }
 }
 
@@ -141,6 +150,13 @@ impl<'p> Parser<'p> {
     }
 
     fn declaration(&mut self) -> Option<NodeContext> {
+        let mut decl_type = DeclarationType::Normal;
+        if self.consume_of_kind(TokenKind::Const).is_some() {
+            decl_type = DeclarationType::Constant;
+        } else if self.consume_of_kind(TokenKind::Mut).is_some() {
+            decl_type = DeclarationType::Mutable;
+        }
+
         let name = self.consume_identifier()?;        
         if self.consume_of_kind(TokenKind::LParen).is_some() {
             let mut arg_names = vec![];
@@ -167,16 +183,30 @@ impl<'p> Parser<'p> {
                 arg_names,
                 ret_type: Box::new(ret_type),
                 body: Box::new(body),
+                decl_type,
             }))
         } else {
-            self.consume_of_kind(TokenKind::Colon);
-            let typ = self.expr(0)?;
-            self.consume_of_kind(TokenKind::Equals);
-            let body = self.expr(0)?;
+            let typ;
+            let body;
+
+            self.consume_of_kind(TokenKind::Colon)?;
+
+            if self.consume_of_kind(TokenKind::Equals).is_some() {
+                typ = None;
+                body = Some(self.expr(0)?);
+            } else {
+                typ = Some(self.expr(0)?);
+                if self.consume_of_kind(TokenKind::Equals).is_some() {
+                    body = Some(self.expr(0)?);
+                } else {
+                    body = None;
+                }
+            }
             Some(self.in_context(true, Node::Declaration {
                 name,
                 typ: Box::new(typ),
                 body: Box::new(body),
+                decl_type,
             }))
         }
     }
