@@ -5,7 +5,7 @@ use std::iter::FromIterator;
 
 use crate::errors::Errors;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     StringLiteral,
     IntegerLiteral,
@@ -30,7 +30,7 @@ pub enum TokenKind {
     EOF,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub value: String,

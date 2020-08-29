@@ -4,7 +4,7 @@ use std::cell::RefMut;
 
 use crate::{
     errors::Errors,
-    parser::Node,
+    parser::NodeContext,
 };
 
 pub struct IRProgram {
@@ -12,12 +12,12 @@ pub struct IRProgram {
 }
 
 pub struct IRGenerator<'i> {
-    ast: &'i Node,
+    ast: &'i NodeContext,
     errors: RefMut<'i, Errors>,
 }
 
 impl<'i> IRGenerator<'i> {
-    pub fn new(ast: &'i Node, errors: RefMut<'i, Errors>) -> Self {
+    pub fn new(ast: &'i NodeContext, errors: RefMut<'i, Errors>) -> Self {
         IRGenerator {
             ast,
             errors,

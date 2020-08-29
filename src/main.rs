@@ -33,10 +33,12 @@ fn main() -> std::io::Result<()> {
     println!("Parser output:\n");
     let mut parser = parser::Parser::new(&results, errors.borrow_mut());
     let results = parser.go();
+    println!("{:#?}", results);
     drop(parser);
 
     println!("IR output:\n");
-    let mut ir_generator = ir::IRGenerator::new(&results, errors.borrow_mut());
+    let unwrapped = results.unwrap();
+    let mut ir_generator = ir::IRGenerator::new(&unwrapped, errors.borrow_mut());
     let _results = ir_generator.go();
     drop(ir_generator);
 
