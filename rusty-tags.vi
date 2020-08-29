@@ -1,6 +1,7 @@
 !_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
 !_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
-Error	/home/jch/code/rs/meg/src/errors.rs	/^enum Error {$/;"	g
+DeclarationType	/home/jch/code/rs/meg/src/parser.rs	/^pub enum DeclarationType {$/;"	g
+Error	/home/jch/code/rs/meg/src/errors.rs	/^pub enum Error {$/;"	g
 Errors	/home/jch/code/rs/meg/src/errors.rs	/^pub struct Errors {$/;"	s
 IRGenerator	/home/jch/code/rs/meg/src/ir.rs	/^pub struct IRGenerator<'i> {$/;"	s
 IRProgram	/home/jch/code/rs/meg/src/ir.rs	/^pub struct IRProgram {$/;"	s
@@ -1388,21 +1389,35 @@ LTOObjectBuffer	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-s
 Lexer	/home/jch/code/rs/meg/src/lexer.rs	/^pub struct Lexer<'l> {$/;"	s
 LexerState	/home/jch/code/rs/meg/src/lexer.rs	/^enum LexerState {$/;"	g
 Node	/home/jch/code/rs/meg/src/parser.rs	/^pub enum Node {$/;"	g
+NodeContext	/home/jch/code/rs/meg/src/parser.rs	/^pub struct NodeContext {$/;"	s
 Parser	/home/jch/code/rs/meg/src/parser.rs	/^pub struct Parser<'p> {$/;"	s
 REMARKS_API_VERSION	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/remarks.rs	/^pub const REMARKS_API_VERSION: u32 = 1;$/;"	c
 Struct_LLVMOpInfo1	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/disassembler.rs	/^pub struct Struct_LLVMOpInfo1 {$/;"	s
-Token	/home/jch/code/rs/meg/src/lexer.rs	/^pub struct Token<'t> {$/;"	s
-TokenKind	/home/jch/code/rs/meg/src/lexer.rs	/^enum TokenKind {$/;"	g
+Token	/home/jch/code/rs/meg/src/lexer.rs	/^pub struct Token {$/;"	s
+TokenKind	/home/jch/code/rs/meg/src/lexer.rs	/^pub enum TokenKind {$/;"	g
+Type	/home/jch/code/rs/meg/src/parser.rs	/^pub enum Type {$/;"	g
+consume	/home/jch/code/rs/meg/src/parser.rs	/^    fn consume(&mut self) -> Token {$/;"	f
+consume_identifier	/home/jch/code/rs/meg/src/parser.rs	/^    fn consume_identifier(&mut self) -> Option<String> {$/;"	f
+consume_of_kind	/home/jch/code/rs/meg/src/parser.rs	/^    fn consume_of_kind(&mut self, kind: TokenKind) -> Option<Token> {$/;"	f
+declaration	/home/jch/code/rs/meg/src/parser.rs	/^    fn declaration(&mut self) -> Option<NodeContext> {$/;"	f
+expr	/home/jch/code/rs/meg/src/parser.rs	/^    fn expr(&mut self, min_bp: u8) -> Option<NodeContext> {$/;"	f
 go	/home/jch/code/rs/meg/src/ir.rs	/^    pub fn go(&mut self) -> IRProgram {$/;"	f
-go	/home/jch/code/rs/meg/src/lexer.rs	/^    pub fn go(&mut self) -> Vec<Token<'l>> {$/;"	f
-go	/home/jch/code/rs/meg/src/parser.rs	/^    pub fn go(&mut self) -> Node {$/;"	f
+go	/home/jch/code/rs/meg/src/lexer.rs	/^    pub fn go(&mut self) -> Vec<Token> {$/;"	f
+go	/home/jch/code/rs/meg/src/parser.rs	/^    pub fn go(&mut self) -> Option<NodeContext> {$/;"	f
+if_expression	/home/jch/code/rs/meg/src/parser.rs	/^    fn if_expression(&mut self) -> Option<NodeContext> {$/;"	f
+in_context	/home/jch/code/rs/meg/src/parser.rs	/^    fn in_context(&mut self, constant: bool, node: Node) -> NodeContext {$/;"	f
+infix_binding_power	/home/jch/code/rs/meg/src/parser.rs	/^fn infix_binding_power(op: &String) -> Option<(u8, u8)> {$/;"	f
+is_special	/home/jch/code/rs/meg/src/lexer.rs	/^fn is_special(ch: char) -> bool {$/;"	f
 lexer	/home/jch/code/rs/meg/src/errors.rs	/^    pub fn lexer(&mut self, message: String, position: usize) {$/;"	f
+lexer_errors	/home/jch/code/rs/meg/src/lexer.rs	/^    fn lexer_errors(contents: &'static str) -> Vec<crate::errors::Error> {$/;"	f
+lexer_results	/home/jch/code/rs/meg/src/lexer.rs	/^    fn lexer_results(contents: &'static str) -> Vec<Token> {$/;"	f
 llvm_create_optimizer	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/link_time_optimizer.rs	/^    pub fn llvm_create_optimizer() -> llvm_lto_t;$/;"	f
 llvm_destroy_optimizer	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/link_time_optimizer.rs	/^    pub fn llvm_destroy_optimizer(lto: llvm_lto_t);$/;"	f
 llvm_lto_status_t	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/link_time_optimizer.rs	/^pub enum llvm_lto_status_t {$/;"	g
 llvm_lto_t	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/link_time_optimizer.rs	/^pub type llvm_lto_t = *mut ::libc::c_void;$/;"	T
 llvm_optimize_modules	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/link_time_optimizer.rs	/^    pub fn llvm_optimize_modules($/;"	f
 llvm_read_object_file	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/link_time_optimizer.rs	/^    pub fn llvm_read_object_file($/;"	f
+loop_expression	/home/jch/code/rs/meg/src/parser.rs	/^    fn loop_expression(&mut self) -> Option<NodeContext> {$/;"	f
 lto_api_version	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^    pub fn lto_api_version() -> ::libc::c_uint;$/;"	f
 lto_bool_t	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^pub type lto_bool_t = u8;$/;"	T
 lto_code_gen_t	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^pub type lto_code_gen_t = *mut LLVMOpaqueLTOCodeGenerator;$/;"	T
@@ -1464,11 +1479,17 @@ lto_runtime_lib_symbols_list	/home/jch/.cargo/registry/src/github.com-1ecc6299db
 lto_symbol_attributes	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^pub enum lto_symbol_attributes {$/;"	g
 main	/home/jch/code/rs/meg/src/main.rs	/^fn main() -> std::io::Result<()> {$/;"	f
 new	/home/jch/code/rs/meg/src/errors.rs	/^    pub fn new() -> Self {$/;"	f
-new	/home/jch/code/rs/meg/src/ir.rs	/^    pub fn new(ast: &'i Node, errors: RefMut<'i, Errors>) -> Self {$/;"	f
+new	/home/jch/code/rs/meg/src/ir.rs	/^    pub fn new(ast: &'i NodeContext, errors: RefMut<'i, Errors>) -> Self {$/;"	f
 new	/home/jch/code/rs/meg/src/lexer.rs	/^    pub fn new(code: &'l str, errors: RefMut<'l, Errors>) -> Self {$/;"	f
-new	/home/jch/code/rs/meg/src/parser.rs	/^    pub fn new(tokens: &'p [Token<'p>], errors: RefMut<'p, Errors>) -> Self {$/;"	f
+new	/home/jch/code/rs/meg/src/parser.rs	/^    pub fn new(tokens: &'p [Token], errors: RefMut<'p, Errors>) -> Self {$/;"	f
 parser	/home/jch/code/rs/meg/src/errors.rs	/^    pub fn parser(&mut self, message: String, position: usize) {$/;"	f
+peek	/home/jch/code/rs/meg/src/parser.rs	/^    fn peek(&self) -> Token {$/;"	f
+postfix_binding_power	/home/jch/code/rs/meg/src/parser.rs	/^fn postfix_binding_power(op: &String) -> Option<(u8, ())> {$/;"	f
+prefix_binding_power	/home/jch/code/rs/meg/src/parser.rs	/^fn prefix_binding_power(op: &String) -> ((), u8) {$/;"	f
 prelude	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lib.rs	/^pub mod prelude {$/;"	m
+string_literal	/home/jch/code/rs/meg/src/lexer.rs	/^    fn string_literal() {$/;"	f
+string_literal_ends_too_early	/home/jch/code/rs/meg/src/lexer.rs	/^    fn string_literal_ends_too_early() {$/;"	f
+tests	/home/jch/code/rs/meg/src/lexer.rs	/^mod tests {$/;"	m
 thinlto_code_gen_t	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^pub type thinlto_code_gen_t = *mut LLVMOpaqueThinLTOCodeGenerator;$/;"	T
 thinlto_codegen_add_cross_referenced_symbol	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^    pub fn thinlto_codegen_add_cross_referenced_symbol($/;"	f
 thinlto_codegen_add_module	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^    pub fn thinlto_codegen_add_module($/;"	f
@@ -1495,3 +1516,6 @@ thinlto_module_get_object	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec
 thinlto_module_get_object_file	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^    pub fn thinlto_module_get_object_file($/;"	f
 thinlto_set_generated_objects_dir	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lto.rs	/^    pub fn thinlto_set_generated_objects_dir($/;"	f
 transforms	/home/jch/.cargo/registry/src/github.com-1ecc6299db9ec823/llvm-sys-100.1.1/src/lib.rs	/^pub mod transforms {$/;"	m
+try_consume_of_kind	/home/jch/code/rs/meg/src/parser.rs	/^    fn try_consume_of_kind(&mut self, kind: TokenKind) -> Option<Token> {$/;"	f
+try_convert_keyword	/home/jch/code/rs/meg/src/lexer.rs	/^fn try_convert_keyword(s: String, position: usize) -> Option<Token> {$/;"	f
+while_expression	/home/jch/code/rs/meg/src/parser.rs	/^    fn while_expression(&mut self) -> Option<NodeContext> {$/;"	f
