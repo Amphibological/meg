@@ -87,9 +87,9 @@ pub enum Node {
 
 #[derive(Debug)]
 pub struct NodeContext {
-    node: Node,
-    position: usize,
-    constant: bool,
+    pub node: Node,
+    pub position: usize,
+    pub constant: bool,
 }
 
 pub struct Parser<'p> {
