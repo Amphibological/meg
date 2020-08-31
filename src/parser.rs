@@ -136,6 +136,19 @@ impl<'p> Parser<'p> {
     }
 
     fn consume_identifier(&mut self) -> Option<String> {
+        let peeked = self.peek();
+        if peeked.kind == TokenKind::Identifier {
+            Some(self.consume().value)
+        } else {
+            self.errors.parser(
+                format!("Expected an identifier, but found {:?} instead", peeked.kind),
+                peeked.position,
+            );
+            None
+        }
+    }
+
+    fn try_consume_identifier(&mut self) -> Option<String> {
         if self.peek().kind == TokenKind::Identifier {
             Some(self.consume().value)
         } else {
@@ -161,12 +174,10 @@ impl<'p> Parser<'p> {
         let mut nodes = vec![];
         loop {
             nodes.push(
-                if self.tokens[self.index + 1].kind == TokenKind::Colon {
-                    self.declaration()?
-                } else if self.tokens[self.index + 1].kind == TokenKind::Equals {
+                if self.tokens[self.index + 1].kind == TokenKind::Equals {
                     self.assignment()?
                 } else {
-                    self.expr(0)?
+                    self.declaration().or_else(|| self.expr(0))?
                 }
             );
             if self.try_consume_of_kind(TokenKind::EOF).is_some() {
@@ -192,25 +203,27 @@ impl<'p> Parser<'p> {
             decl_type = DeclarationType::Mutable;
         }
 
-        let name = self.consume_identifier()?;        
+        let name = self.try_consume_identifier()?;        
         if self.try_consume_of_kind(TokenKind::LParen).is_some() {
             let mut arg_names = vec![];
             let mut arg_types = vec![];
 
-            loop {
-                arg_names.push(self.consume_identifier()?);
-                self.consume_of_kind(TokenKind::Colon);
-                arg_types.push(self.expr(0)?);
-                if self.try_consume_of_kind(TokenKind::Comma).is_none() {
-                    break;
+            if self.try_consume_of_kind(TokenKind::RParen).is_none() {
+                loop {
+                    arg_names.push(self.consume_identifier()?);
+                    self.try_consume_of_kind(TokenKind::Colon);
+                    arg_types.push(self.expr(0)?);
+                    if self.try_consume_of_kind(TokenKind::Comma).is_none() {
+                        break;
+                    }
                 }
+                self.try_consume_of_kind(TokenKind::RParen)?;
             }
-            self.consume_of_kind(TokenKind::RParen)?;
 
-            self.consume_of_kind(TokenKind::Colon)?;
+            self.try_consume_of_kind(TokenKind::Colon)?;
             let ret_type = self.expr(0)?;
 
-            self.consume_of_kind(TokenKind::Equals)?;
+            self.try_consume_of_kind(TokenKind::Equals)?;
             let body = self.expr(0)?;
             Some(self.in_context(true, Node::FunctionDeclaration {
                 name,
@@ -224,7 +237,7 @@ impl<'p> Parser<'p> {
             let typ;
             let body;
 
-            self.consume_of_kind(TokenKind::Colon)?;
+            self.try_consume_of_kind(TokenKind::Colon)?;
 
             if self.try_consume_of_kind(TokenKind::Equals).is_some() {
                 typ = None;

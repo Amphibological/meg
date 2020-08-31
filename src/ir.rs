@@ -13,10 +13,12 @@ use crate::{
     },
 };
 
+#[derive(Debug)]
 pub enum InstructionKind {
     ConstBool(bool),
     ConstInt(i128),
     ConstFloat(f64),
+    ConstString(String),
 
     Push(String),
     Pop(String),
@@ -24,16 +26,19 @@ pub enum InstructionKind {
     Call,
 }
 
+#[derive(Debug)]
 pub struct Instruction {
     kind: InstructionKind,
     constant: bool,
 }
 
+#[derive(Debug)]
 pub struct BasicBlock {
     id: usize,
     instructions: Vec<Instruction>,
 }
 
+#[derive(Debug)]
 pub struct Function {
     name: String,
     args: usize,
@@ -41,12 +46,14 @@ pub struct Function {
     blocks: Vec<BasicBlock>,
 }
 
+#[derive(Debug)]
 pub enum Value {
     Function(Function),
 }
 
 pub type Scope = HashMap<String, Value>;
 
+#[derive(Debug)]
 pub struct Environment {
     scopes: Vec<Scope>,
 }
@@ -143,7 +150,12 @@ impl<'i> IRGenerator<'i> {
         }
     }
 
-    fn block(&mut self, func: &mut Function, node: &[NodeContext], constant: bool) {}
+    fn block(&mut self, func: &mut Function, nodes: &[NodeContext], _constant: bool) {
+        for node in nodes {
+            self.node(func, node);
+        }
+    }
+
     fn infix_op(&mut self, func: &mut Function, op: &str, left: &Box<NodeContext>, right: &Box<NodeContext>, constant: bool) {}
     fn prefix_op(&mut self, func: &mut Function, op: &str, right: &Box<NodeContext>, constant: bool) {}
     fn postfix_op(&mut self, func: &mut Function, op: &str, left: &Box<NodeContext>, constant: bool) {}
@@ -160,6 +172,7 @@ impl<'i> IRGenerator<'i> {
                     }),
                     Type::IntLiteral => InstructionKind::ConstInt(value.parse().unwrap()),
                     Type::FloatLiteral => InstructionKind::ConstFloat(value.parse().unwrap()),
+                    Type::StrLiteral => InstructionKind::ConstString(value.to_owned()),
                     _ => todo!(),
                 },
                 constant,
@@ -224,7 +237,8 @@ impl<'i> IRGenerator<'i> {
 
         self.env.scopes.push(new_local_scope());
         self.node(&mut new_func, body);
-        self.current_scope().insert(new_func.name.clone(), Value::Function(new_func));
+        let scope_index = self.env.scopes.len() - 2;
+        self.env.scopes[scope_index].insert(new_func.name.clone(), Value::Function(new_func));
     }
 
     fn if_expression(&mut self, func: &mut Function, condition: &Box<NodeContext>, then_body: &Box<NodeContext>, else_body: &Box<NodeContext>, constant: bool) {}
@@ -254,4 +268,3 @@ fn new_global_scope() -> Scope {
 fn new_local_scope() -> Scope {
     HashMap::new()
 }
-

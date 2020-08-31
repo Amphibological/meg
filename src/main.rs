@@ -49,8 +49,14 @@ fn main() -> std::io::Result<()> {
     println!("IR output:\n");
     let unwrapped = results.unwrap();
     let mut ir_generator = ir::IRGenerator::new(&unwrapped, errors.borrow_mut());
-    let _results = ir_generator.go();
+    let results = ir_generator.go();
+    println!("{:#?}", results);
     drop(ir_generator);
+
+    println!("IR generation errors:\n");
+    for error in &errors.borrow().errors {
+        println!("{:?}", error);
+    }
 
     // TODO: more here...
 
