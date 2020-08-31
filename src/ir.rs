@@ -24,6 +24,13 @@ pub enum InstructionKind {
     Push(String),
     Pop(String),
 
+    Add,
+    Subtract,
+    Multiply,
+    ExactDivide,
+    FloorDivide,
+    Negate,
+
     Call,
 }
 
@@ -156,9 +163,42 @@ impl<'i> IRGenerator<'i> {
         }
     }
 
-    fn infix_op(&mut self, func: &mut Function, op: &str, left: &Box<NodeContext>, right: &Box<NodeContext>, constant: bool) {}
-    fn prefix_op(&mut self, func: &mut Function, op: &str, right: &Box<NodeContext>, constant: bool) {}
+    fn infix_op(&mut self, func: &mut Function, op: &str, left: &Box<NodeContext>, right: &Box<NodeContext>, constant: bool) {
+        self.node(func, left);
+        self.node(func, right);
+
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: match op {
+                    "+" => InstructionKind::Add,
+                    "-" => InstructionKind::Subtract,
+                    "*" => InstructionKind::Multiply,
+                    "/" => InstructionKind::ExactDivide,
+                    "//" => InstructionKind::FloorDivide,
+                    _ => unreachable!(),
+                },
+                constant,
+            }
+        );
+    }
+
+    fn prefix_op(&mut self, func: &mut Function, op: &str, right: &Box<NodeContext>, constant: bool) {
+        self.node(func, right);
+
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: match op {
+                    "-" => InstructionKind::Negate,
+                    _ => unreachable!(),
+                },
+                constant,
+            }
+        );
+ 
+    }
+
     fn postfix_op(&mut self, func: &mut Function, op: &str, left: &Box<NodeContext>, constant: bool) {}
+
     fn index_op(&mut self, func: &mut Function, object: &Box<NodeContext>, index: &Box<NodeContext>, constant: bool) {}
 
     fn literal(&mut self, func: &mut Function, typ: &Type, value: &str, constant: bool) {

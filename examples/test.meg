@@ -1,4 +1,4 @@
 fun main() void = {
-    imm v: i32 = 10
+    imm v: i32 = 11 + 12
     debug("Hello world!")
 }
