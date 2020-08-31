@@ -14,13 +14,15 @@ pub enum Type {
     StrLiteral,
     Undefined,
     Bool,
+
+    Unknown,
 }
 
 #[derive(Debug)]
 pub enum DeclarationType {
-    Normal,
-    Constant,
+    Immutable,
     Mutable,
+    Constant,
 }
 
 #[derive(Debug)]
@@ -58,8 +60,8 @@ pub enum Node {
     },
     Declaration {
         name: String,
-        typ: Box<Option<NodeContext>>,
-        body: Box<Option<NodeContext>>,
+        typ: Box<NodeContext>,
+        body: Box<NodeContext>,
         decl_type: DeclarationType,
     },
     FunctionDeclaration {
@@ -68,7 +70,6 @@ pub enum Node {
         arg_names: Vec<String>,
         ret_type: Box<NodeContext>,
         body: Box<NodeContext>,
-        decl_type: DeclarationType,
     },
     IfExpression {
         condition: Box<NodeContext>,
@@ -174,10 +175,16 @@ impl<'p> Parser<'p> {
         let mut nodes = vec![];
         loop {
             nodes.push(
-                if self.tokens[self.index + 1].kind == TokenKind::Equals {
-                    self.assignment()?
-                } else {
-                    self.declaration().or_else(|| self.expr(0))?
+                match self.peek().kind {
+                    TokenKind::Imm | TokenKind::Mut => self.declaration()?,
+                    TokenKind::Fun => self.function_declaration()?,
+                    _ => {
+                        if self.tokens[self.index + 1].kind == TokenKind::Equals {
+                            self.assignment()?
+                        } else {
+                            self.expr(0)?
+                        }
+                    }
                 }
             );
             if self.try_consume_of_kind(TokenKind::EOF).is_some() {
@@ -196,67 +203,75 @@ impl<'p> Parser<'p> {
     }
 
     fn declaration(&mut self) -> Option<NodeContext> {
-        let mut decl_type = DeclarationType::Normal;
-        if self.try_consume_of_kind(TokenKind::Const).is_some() {
-            decl_type = DeclarationType::Constant;
-        } else if self.try_consume_of_kind(TokenKind::Mut).is_some() {
-            decl_type = DeclarationType::Mutable;
-        }
+        let mut decl_type = match self.consume().kind {
+            TokenKind::Imm => DeclarationType::Immutable,
+            TokenKind::Mut => DeclarationType::Mutable,
+            TokenKind::Const => DeclarationType::Constant,
+            _ => unreachable!(),
+        };
 
         let name = self.try_consume_identifier()?;        
-        if self.try_consume_of_kind(TokenKind::LParen).is_some() {
-            let mut arg_names = vec![];
-            let mut arg_types = vec![];
+        self.try_consume_of_kind(TokenKind::Colon)?;
 
-            if self.try_consume_of_kind(TokenKind::RParen).is_none() {
-                loop {
-                    arg_names.push(self.consume_identifier()?);
-                    self.try_consume_of_kind(TokenKind::Colon);
-                    arg_types.push(self.expr(0)?);
-                    if self.try_consume_of_kind(TokenKind::Comma).is_none() {
-                        break;
-                    }
-                }
-                self.try_consume_of_kind(TokenKind::RParen)?;
-            }
+        let typ;
+        let body;
 
-            self.try_consume_of_kind(TokenKind::Colon)?;
-            let ret_type = self.expr(0)?;
-
-            self.try_consume_of_kind(TokenKind::Equals)?;
-            let body = self.expr(0)?;
-            Some(self.in_context(true, Node::FunctionDeclaration {
-                name,
-                arg_types,
-                arg_names,
-                ret_type: Box::new(ret_type),
-                body: Box::new(body),
-                decl_type,
-            }))
+        if self.try_consume_of_kind(TokenKind::Equals).is_some() {
+            typ = self.in_context(true, Node::Literal {
+                typ: Type::Unknown,
+                value: "".to_owned(),
+            });
+            body = self.expr(0)?;
         } else {
-            let typ;
-            let body;
-
-            self.try_consume_of_kind(TokenKind::Colon)?;
-
+            typ = self.expr(0)?;
             if self.try_consume_of_kind(TokenKind::Equals).is_some() {
-                typ = None;
-                body = Some(self.expr(0)?);
+                body = self.expr(0)?;
             } else {
-                typ = Some(self.expr(0)?);
-                if self.try_consume_of_kind(TokenKind::Equals).is_some() {
-                    body = Some(self.expr(0)?);
-                } else {
-                    body = None;
+                body = self.in_context(true, Node::Literal {
+                    typ: Type::Undefined,
+                    value: "undef".to_owned(),
+                });
+            }
+        }
+        Some(self.in_context(true, Node::Declaration {
+            name,
+            typ: Box::new(typ),
+            body: Box::new(body),
+            decl_type,
+        }))
+    }
+
+    fn function_declaration(&mut self) -> Option<NodeContext> {
+        self.consume_of_kind(TokenKind::Fun)?;
+        let name = self.try_consume_identifier()?;        
+        self.consume_of_kind(TokenKind::LParen);
+        let mut arg_names = vec![];
+        let mut arg_types = vec![];
+
+        if self.try_consume_of_kind(TokenKind::RParen).is_none() {
+            loop {
+                arg_names.push(self.consume_identifier()?);
+                self.try_consume_of_kind(TokenKind::Colon)?;
+                arg_types.push(self.expr(0)?);
+                if self.try_consume_of_kind(TokenKind::Comma).is_none() {
+                    break;
                 }
             }
-            Some(self.in_context(true, Node::Declaration {
-                name,
-                typ: Box::new(typ),
-                body: Box::new(body),
-                decl_type,
-            }))
+            self.try_consume_of_kind(TokenKind::RParen)?;
         }
+
+        //self.try_consume_of_kind(TokenKind::Colon)?;
+        let ret_type = self.expr(0)?;
+
+        self.try_consume_of_kind(TokenKind::Equals)?;
+        let body = self.expr(0)?;
+        Some(self.in_context(true, Node::FunctionDeclaration {
+            name,
+            arg_types,
+            arg_names,
+            ret_type: Box::new(ret_type),
+            body: Box::new(body),
+        }))
     }
 
     fn assignment(&mut self) -> Option<NodeContext> {

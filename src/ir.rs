@@ -132,8 +132,7 @@ impl<'i> IRGenerator<'i> {
                 arg_names,
                 ret_type,
                 body,
-                decl_type,
-            } => self.function_declaration(func, name, arg_types, arg_names, ret_type, body, decl_type, node.constant),
+            } => self.function_declaration(func, name, arg_types, arg_names, ret_type, body, node.constant),
             IfExpression {
                 condition,
                 then_body,
@@ -206,7 +205,7 @@ impl<'i> IRGenerator<'i> {
         );
     }
 
-    fn declaration(&mut self, func: &mut Function, name: &str, typ: &Box<Option<NodeContext>>, body: &Box<Option<NodeContext>>, decl_type: &DeclarationType, constant: bool) {}
+    fn declaration(&mut self, func: &mut Function, name: &str, typ: &Box<NodeContext>, body: &Box<NodeContext>, decl_type: &DeclarationType, constant: bool) {}
 
     fn function_declaration(&mut self,
         _func: &mut Function,
@@ -215,7 +214,6 @@ impl<'i> IRGenerator<'i> {
         _arg_names: &[String],
         _ret_type: &Box<NodeContext>,
         body: &Box<NodeContext>,
-        _decl_type: &DeclarationType,
         _constant: bool
     ) {
         let mut new_func = Function {

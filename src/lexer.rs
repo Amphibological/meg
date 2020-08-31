@@ -26,6 +26,8 @@ pub enum TokenKind {
 
     Const,
     Mut,
+    Imm,
+    Fun,
     If,
     Elif,
     Else,
@@ -248,6 +250,8 @@ fn try_convert_keyword(s: String, position: usize) -> Option<Token> {
         kind: match s.as_str() {
             "const" => TokenKind::Const,
             "mut" => TokenKind::Mut,
+            "imm" => TokenKind::Imm,
+            "fun" => TokenKind::Fun,
             "if" => TokenKind::If,
             "elif" => TokenKind::Elif,
             "else" => TokenKind::Else,
