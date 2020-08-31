@@ -20,6 +20,7 @@ pub enum InstructionKind {
     ConstFloat(f64),
     ConstString(String),
 
+    Allocate(String),
     Push(String),
     Pop(String),
 
@@ -205,7 +206,29 @@ impl<'i> IRGenerator<'i> {
         );
     }
 
-    fn declaration(&mut self, func: &mut Function, name: &str, typ: &Box<NodeContext>, body: &Box<NodeContext>, decl_type: &DeclarationType, constant: bool) {}
+    fn declaration(&mut self,
+        func: &mut Function,
+        name: &str,
+        typ: &Box<NodeContext>,
+        body: &Box<NodeContext>,
+        _decl_type: &DeclarationType,
+        constant: bool
+    ) {
+        self.node(func, typ);
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::Allocate(name.into()),
+                constant,
+            }
+        );
+        self.node(func, body);
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::Pop(name.into()),
+                constant,
+            }
+        );
+    }
 
     fn function_declaration(&mut self,
         _func: &mut Function,
@@ -233,7 +256,7 @@ impl<'i> IRGenerator<'i> {
         };
 
 
-        self.env.scopes.push(new_local_scope());
+        //self.env.scopes.push(new_local_scope());
         self.node(&mut new_func, body);
         let scope_index = self.env.scopes.len() - 2;
         self.env.scopes[scope_index].insert(new_func.name.clone(), Value::Function(new_func));
@@ -252,10 +275,6 @@ impl<'i> IRGenerator<'i> {
             }
         );
 
-    }
-
-    fn current_scope(&mut self) -> &mut Scope {
-        self.env.scopes.last_mut().unwrap()
     }
 }
 
