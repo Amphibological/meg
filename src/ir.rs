@@ -14,6 +14,16 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub enum CompareType {
+    EQ,
+    NE,
+    LT,
+    GT,
+    LE,
+    GE,
+}
+
+#[derive(Debug)]
 pub enum InstructionKind {
     ConstBool(bool),
     ConstInt(i128),
@@ -30,8 +40,11 @@ pub enum InstructionKind {
     ExactDivide,
     FloorDivide,
     Negate,
+    Test(CompareType),
 
     Call,
+    BranchIf(usize, usize),
+    Jump(usize),
 }
 
 #[derive(Debug)]
@@ -70,6 +83,7 @@ pub struct IRGenerator<'i> {
     ast: &'i NodeContext,
     errors: RefMut<'i, Errors>,
     env: Environment,
+    next_block_id: usize,
 }
 
 impl<'i> IRGenerator<'i> {
@@ -80,6 +94,7 @@ impl<'i> IRGenerator<'i> {
             env: Environment {
                 scopes: vec![new_global_scope()],
             },
+            next_block_id: 0,
         }
     }
 
@@ -175,6 +190,14 @@ impl<'i> IRGenerator<'i> {
                     "*" => InstructionKind::Multiply,
                     "/" => InstructionKind::ExactDivide,
                     "//" => InstructionKind::FloorDivide,
+
+                    "==" => InstructionKind::Test(CompareType::EQ),
+                    "!=" => InstructionKind::Test(CompareType::NE),
+                    "<" => InstructionKind::Test(CompareType::LT),
+                    ">" => InstructionKind::Test(CompareType::GT),
+                    "<=" => InstructionKind::Test(CompareType::LE),
+                    ">=" => InstructionKind::Test(CompareType::GE),
+
                     _ => unreachable!(),
                 },
                 constant,
@@ -197,9 +220,13 @@ impl<'i> IRGenerator<'i> {
  
     }
 
-    fn postfix_op(&mut self, func: &mut Function, op: &str, left: &Box<NodeContext>, constant: bool) {}
+    fn postfix_op(&mut self, func: &mut Function, op: &str, left: &Box<NodeContext>, constant: bool) {
+        todo!("{:?}{:?}{:?}{:?}", func, op, left, constant)
+    }
 
-    fn index_op(&mut self, func: &mut Function, object: &Box<NodeContext>, index: &Box<NodeContext>, constant: bool) {}
+    fn index_op(&mut self, func: &mut Function, object: &Box<NodeContext>, index: &Box<NodeContext>, constant: bool) {
+        todo!("{:?}{:?}{:?}{:?}", func, object, index, constant)
+    }
 
     fn literal(&mut self, func: &mut Function, typ: &Type, value: &str, constant: bool) {
         func.blocks.last_mut().unwrap().instructions.push(
@@ -285,11 +312,11 @@ impl<'i> IRGenerator<'i> {
             retvals: 1,
             blocks: vec![
                 BasicBlock {
-                    id: 0,
+                    id: self.get_next_block_id(),
                     instructions: vec![],
                 },
                 BasicBlock {
-                    id: 1,
+                    id: self.get_next_block_id(),
                     instructions: vec![],
                 },
             ],
@@ -298,11 +325,64 @@ impl<'i> IRGenerator<'i> {
 
         //self.env.scopes.push(new_local_scope());
         self.node(&mut new_func, body);
-        let scope_index = self.env.scopes.len() - 2;
+        //let scope_index = self.env.scopes.len() - 2;
+        let scope_index = self.env.scopes.len() - 1;
         self.env.scopes[scope_index].insert(new_func.name.clone(), Value::Function(new_func));
     }
 
-    fn if_expression(&mut self, func: &mut Function, condition: &Box<NodeContext>, then_body: &Box<NodeContext>, else_body: &Box<NodeContext>, constant: bool) {}
+    fn if_expression(
+        &mut self,
+        func: &mut Function,
+        condition: &Box<NodeContext>,
+        then_body: &Box<NodeContext>,
+        else_body: &Box<NodeContext>,
+        constant: bool
+    ) {
+        self.node(func, condition);
+        let then_block_id = self.get_next_block_id();
+        let else_block_id = self.get_next_block_id();
+        let end_block_id = self.get_next_block_id();
+
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::BranchIf(then_block_id, else_block_id),
+                constant,
+            }
+        );
+
+        func.blocks.push(BasicBlock {
+            id: then_block_id,
+            instructions: vec![],
+        }); 
+        
+        self.node(func, then_body);
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::Jump(end_block_id),
+                constant,
+            }
+        );
+
+        func.blocks.push(BasicBlock {
+            id: else_block_id,
+            instructions: vec![],
+        }); 
+
+        self.node(func, else_body);
+
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::Jump(end_block_id),
+                constant,
+            }
+        );
+
+        func.blocks.push(BasicBlock {
+            id: end_block_id,
+            instructions: vec![],
+        }); 
+    }
+
     fn while_expression(&mut self, func: &mut Function, condition: &Box<NodeContext>, body: &Box<NodeContext>, constant: bool) {}
 
     fn assignment(&mut self, func: &mut Function, name: &str, value: &Box<NodeContext>, constant: bool) {
@@ -316,12 +396,14 @@ impl<'i> IRGenerator<'i> {
         );
 
     }
+
+    fn get_next_block_id(&mut self) -> usize {
+        self.next_block_id += 1;
+        self.next_block_id - 1
+    }
 }
 
 fn new_global_scope() -> Scope {
     HashMap::new()
 }
 
-fn new_local_scope() -> Scope {
-    HashMap::new()
-}

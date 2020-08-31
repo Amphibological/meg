@@ -1,4 +1,7 @@
 fun main() void = {
-    imm v: i32 = 11 + 12
-    debug("Hello world!")
+    if x < 10 {
+        debug("WOW")
+    } else {
+        debug("WOOOO")
+    }
 }
