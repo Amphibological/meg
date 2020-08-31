@@ -1,4 +1,4 @@
-factorial(n: n64): n64 = {
+fun factorial(n: n64) n64 = {
     if n == 0 {
         1
     } else {

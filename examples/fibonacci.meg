@@ -1,4 +1,4 @@
-fibonnaci(n: n64): n64 = {
+fun fibonnaci(n: n64) n64 = {
     if n < 2 {
         1
     } else {

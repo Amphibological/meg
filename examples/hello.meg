@@ -1,5 +1,5 @@
-io: use "core.io"
+use core.io
 
-main(): void = {
+fun main() void = {
     io.out.writeLine("Hello world!")
 }
