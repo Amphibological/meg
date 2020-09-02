@@ -98,11 +98,17 @@ impl<'i> IRGenerator<'i> {
     }
 
     pub fn go(&mut self) -> &Environment {
+        let prog_id = self.get_next_block_id();
         self.node(&mut Function {
-            name: "dummy".to_owned(), 
+            name: "program".to_owned(), 
             args: 0,
             retvals: 0,
-            blocks: vec![],
+            blocks: vec![
+                BasicBlock {
+                    id: prog_id,
+                    instructions: vec![],
+                }
+            ],
         }, self.ast);
 
         &self.env
@@ -297,7 +303,7 @@ impl<'i> IRGenerator<'i> {
         func: &mut Function,
         arg_types: &[NodeContext],
         _arg_names: &[String],
-        _ret_types: &[NodeContext],
+        ret_types: &[NodeContext],
         body: &Box<NodeContext>,
         constant: bool
     ) {
@@ -305,7 +311,7 @@ impl<'i> IRGenerator<'i> {
         let mut new_func = Function {
             name: name.to_owned(),
             args: arg_types.len(),
-            retvals: 1,
+            retvals: ret_types.len(),
             blocks: vec![
                 BasicBlock {
                     id: self.get_next_block_id(),
@@ -324,7 +330,7 @@ impl<'i> IRGenerator<'i> {
 
         func.blocks.last_mut().unwrap().instructions.push(
             Instruction {
-                kind: InstructionKind::GetFunction(name.to_owned()),
+                kind: InstructionKind::Push(name.to_owned()),
                 constant,
             }
         );
