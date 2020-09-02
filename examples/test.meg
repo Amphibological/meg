@@ -1,7 +1,3 @@
-fun main() void = {
-    if x < 10 {
-        debug("WOW")
-    } else {
-        debug("WOOOO")
-    }
+foo := fn() void {
+    debug("Hi")
 }

@@ -19,13 +19,6 @@ pub enum Type {
 }
 
 #[derive(Debug)]
-pub enum DeclarationType {
-    Immutable,
-    Mutable,
-    Constant,
-}
-
-#[derive(Debug)]
 pub enum Node {
     Block {
         nodes: Vec<NodeContext>,
@@ -62,14 +55,6 @@ pub enum Node {
         name: String,
         typ: Box<NodeContext>,
         body: Box<NodeContext>,
-        decl_type: DeclarationType,
-    },
-    FunctionDeclaration {
-        name: String,
-        arg_types: Vec<NodeContext>,
-        arg_names: Vec<String>,
-        ret_type: Box<NodeContext>,
-        body: Box<NodeContext>,
     },
     IfExpression {
         condition: Box<NodeContext>,
@@ -83,6 +68,12 @@ pub enum Node {
     Assignment {
         name: String,
         value: Box<NodeContext>,
+    },
+    FunctionExpression {
+        arg_types: Vec<NodeContext>,
+        arg_names: Vec<String>,
+        ret_types: Vec<NodeContext>,
+        body: Box<NodeContext>,
     }
 }
 
@@ -175,16 +166,12 @@ impl<'p> Parser<'p> {
         let mut nodes = vec![];
         loop {
             nodes.push(
-                match self.peek().kind {
-                    TokenKind::Imm | TokenKind::Mut => self.declaration()?,
-                    TokenKind::Fun => self.function_declaration()?,
-                    _ => {
-                        if self.tokens[self.index + 1].kind == TokenKind::Equals {
-                            self.assignment()?
-                        } else {
-                            self.expr(0)?
-                        }
-                    }
+                if self.tokens[self.index + 1].kind == TokenKind::Colon {
+                    self.declaration()?
+                } else if self.tokens[self.index + 1].kind == TokenKind::Equals {
+                    self.assignment()?
+                } else {
+                    self.expr(0)?
                 }
             );
             if self.try_consume_of_kind(TokenKind::EOF).is_some() {
@@ -203,15 +190,8 @@ impl<'p> Parser<'p> {
     }
 
     fn declaration(&mut self) -> Option<NodeContext> {
-        let mut decl_type = match self.consume().kind {
-            TokenKind::Imm => DeclarationType::Immutable,
-            TokenKind::Mut => DeclarationType::Mutable,
-            TokenKind::Const => DeclarationType::Constant,
-            _ => unreachable!(),
-        };
-
-        let name = self.try_consume_identifier()?;        
-        self.try_consume_of_kind(TokenKind::Colon)?;
+        let name = self.consume_identifier()?;        
+        self.consume_of_kind(TokenKind::Colon)?;
 
         let typ;
         let body;
@@ -237,13 +217,10 @@ impl<'p> Parser<'p> {
             name,
             typ: Box::new(typ),
             body: Box::new(body),
-            decl_type,
         }))
     }
 
-    fn function_declaration(&mut self) -> Option<NodeContext> {
-        self.consume_of_kind(TokenKind::Fun)?;
-        let name = self.try_consume_identifier()?;        
+    fn function_expression(&mut self) -> Option<NodeContext> {
         self.consume_of_kind(TokenKind::LParen);
         let mut arg_names = vec![];
         let mut arg_types = vec![];
@@ -251,25 +228,23 @@ impl<'p> Parser<'p> {
         if self.try_consume_of_kind(TokenKind::RParen).is_none() {
             loop {
                 arg_names.push(self.consume_identifier()?);
-                self.try_consume_of_kind(TokenKind::Colon)?;
+                self.consume_of_kind(TokenKind::Colon)?;
                 arg_types.push(self.expr(0)?);
                 if self.try_consume_of_kind(TokenKind::Comma).is_none() {
                     break;
                 }
             }
-            self.try_consume_of_kind(TokenKind::RParen)?;
+            self.consume_of_kind(TokenKind::RParen)?;
         }
 
-        //self.try_consume_of_kind(TokenKind::Colon)?;
+        // TODO multiple return types
         let ret_type = self.expr(0)?;
 
-        self.try_consume_of_kind(TokenKind::Equals)?;
-        let body = self.expr(0)?;
-        Some(self.in_context(true, Node::FunctionDeclaration {
-            name,
+        let body = self.expr(0)?; // TODO this needs to specifically be a block???
+        Some(self.in_context(true, Node::FunctionExpression {
             arg_types,
             arg_names,
-            ret_type: Box::new(ret_type),
+            ret_types: vec![ret_type],
             body: Box::new(body),
         }))
     }
@@ -424,6 +399,12 @@ impl<'p> Parser<'p> {
                 ..
             } => {
                 self.loop_expression()?
+            },
+            Token {
+                kind: TokenKind::Fn,
+                ..
+            } => {
+                self.function_expression()?
             },
             Token {
                 kind: TokenKind::EOF,

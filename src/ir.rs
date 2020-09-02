@@ -9,7 +9,6 @@ use crate::{
         Node,
         NodeContext,
         Type,
-        DeclarationType,
     },
 };
 
@@ -147,15 +146,13 @@ impl<'i> IRGenerator<'i> {
                 name,
                 typ,
                 body,
-                decl_type,
-            } => self.declaration(func, name, typ, body, decl_type, node.constant),
-            FunctionDeclaration {
-                name,
+            } => self.declaration(func, name, typ, body, node.constant),
+            FunctionExpression {
                 arg_types,
                 arg_names,
-                ret_type,
+                ret_types,
                 body,
-            } => self.function_declaration(func, name, arg_types, arg_names, ret_type, body, node.constant),
+            } => self.function_expression(func, arg_types, arg_names, ret_types, body, node.constant),
             IfExpression {
                 condition,
                 then_body,
@@ -278,7 +275,6 @@ impl<'i> IRGenerator<'i> {
         name: &str,
         typ: &Box<NodeContext>,
         body: &Box<NodeContext>,
-        _decl_type: &DeclarationType,
         constant: bool
     ) {
         self.node(func, typ);
@@ -297,15 +293,15 @@ impl<'i> IRGenerator<'i> {
         );
     }
 
-    fn function_declaration(&mut self,
-        _func: &mut Function,
-        name: &str,
+    fn function_expression(&mut self,
+        func: &mut Function,
         arg_types: &[NodeContext],
         _arg_names: &[String],
-        _ret_type: &Box<NodeContext>,
+        _ret_types: &[NodeContext],
         body: &Box<NodeContext>,
-        _constant: bool
+        constant: bool
     ) {
+        let name = "foo";
         let mut new_func = Function {
             name: name.to_owned(),
             args: arg_types.len(),
@@ -322,12 +318,16 @@ impl<'i> IRGenerator<'i> {
             ],
         };
 
-
-        //self.env.scopes.push(new_local_scope());
         self.node(&mut new_func, body);
-        //let scope_index = self.env.scopes.len() - 2;
         let scope_index = self.env.scopes.len() - 1;
         self.env.scopes[scope_index].insert(new_func.name.clone(), Value::Function(new_func));
+
+        func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::GetFunction(name.to_owned()),
+                constant,
+            }
+        );
     }
 
     fn if_expression(

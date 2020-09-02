@@ -1,5 +1,5 @@
 use core.io
 
-fun main() void = {
+main := fn() void {
     io.out.writeLine("Hello world!")
 }
