@@ -9,6 +9,7 @@ pub struct Interpreter<'i> {
     current_function: usize,
     current_block: usize,
     current_instruction: usize,
+    finished: bool,
 }
 
 impl<'i> Interpreter<'i> {
@@ -22,26 +23,31 @@ impl<'i> Interpreter<'i> {
             current_function: func_id,
             current_block: first_block,
             current_instruction: 0,
+            finished: false,
         } 
     }
 
     fn advance(&mut self) {
         self.current_instruction += 1;
-        if self.current_instruction > self.env.functions[&self.current_function].blocks[self.current_block].instructions.len() {
+        if self.current_instruction >= self.env.functions[&self.current_function].blocks[self.current_block].instructions.len() {
             self.current_block += 1;
         }
 
-        if self.current_block > self.env.functions[&self.current_function].blocks.len() {
-
+        if self.current_block >= self.env.functions[&self.current_function].blocks.len() {
+            self.finished = true;
         }
     }
 
     pub fn go(&mut self) { // TODO at some point this will return something???
         loop {
             use InstructionKind::*;
-            let ins = &self.env.functions[&self.current_function]
-                .blocks[self.current_block]
-                .instructions[self.current_instruction];
+            let ins = if self.finished {
+                return;
+            } else {
+                &self.env.functions[&self.current_function]
+                    .blocks[self.current_block]
+                    .instructions[self.current_instruction]
+            };
             
             match &ins.kind.clone() {
                 ConstBool(value) => self.const_bool(value),
