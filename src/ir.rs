@@ -432,6 +432,9 @@ impl<'i> IRGenerator<'i> {
 }
 
 fn new_global_scope() -> Scope {
-    HashMap::new()
+    let mut scope = HashMap::new();
+    scope.insert("true".to_owned(), Value::Bool(true));
+    scope.insert("false".to_owned(), Value::Bool(false));
+    scope
 }
 

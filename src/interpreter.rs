@@ -217,11 +217,63 @@ impl<'i> Interpreter<'i> {
         self.advance();
     }
 
-    fn test(&mut self, compare_type: &CompareType) {}
+    fn test(&mut self, compare_type: &CompareType) {
+        let v1 = self.stack.pop().unwrap();  
+        let v2 = self.stack.pop().unwrap();  
+
+        self.stack.push(match v1 {
+            Value::Integer(i1) => if let Value::Integer(i2) = v2 {
+                Value::Bool(match compare_type {
+                    CompareType::EQ => i1 == i2,
+                    _ => unreachable!(),
+                })
+            } else {
+                panic!()
+            },
+            Value::Float(f1) => if let Value::Float(f2) = v2 {
+                Value::Bool(match compare_type {
+                    CompareType::EQ => f1 == f2,
+                    _ => unreachable!(),
+                })
+            } else {
+                panic!()
+            },
+            Value::Bool(b1) => if let Value::Bool(b2) = v2 {
+                Value::Bool(match compare_type {
+                    CompareType::EQ => b1 == b2,
+                    _ => unreachable!(),
+                })
+            } else {
+                panic!()
+            },
+            Value::String(s1) => if let Value::String(s2) = v2 {
+                Value::Bool(match compare_type {
+                    CompareType::EQ => s1 == s2,
+                    _ => unreachable!(),
+                })
+            } else {
+                panic!()
+            },
+            _ => panic!(),
+        });
+        self.advance();
+    }
 
     fn call(&mut self) {}
-    fn branch_if(&mut self, then_block: &usize, else_block: &usize) {}
-    fn jump(&mut self, block: &usize) {}
+
+    fn branch_if(&mut self, then_block: &usize, else_block: &usize) {
+        match self.stack.pop().unwrap() {
+            Value::Bool(true) => self.current_block = *then_block,
+            Value::Bool(false) => self.current_block = *else_block,
+            _ => panic!(),
+        };
+        self.current_instruction = 0;
+    }
+
+    fn jump(&mut self, block: &usize) {
+        self.current_block = *block;
+        self.current_instruction = 0;
+    }
 
     fn get_function(&mut self, func: &usize) {}
 }

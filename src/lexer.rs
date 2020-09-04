@@ -97,6 +97,21 @@ impl<'l> Lexer<'l> {
                         token.push(ch);   
                         self.state = LexerState::Integer;
                         start_position = self.index;
+                    } else if ch == '=' {
+                        if self.code[self.index + 1] == '=' {
+                            self.index += 1;
+                            tokens.push(Token {
+                                kind: TokenKind::Operator,
+                                value: "==".to_owned(),
+                                position: self.index,
+                            });
+                        } else {
+                            tokens.push(Token {
+                                kind: TokenKind::Equals,
+                                value: "=".to_owned(),
+                                position: self.index,
+                            });
+                        }
                     } else if is_special(ch) {
                         tokens.push(Token {
                             kind: match ch {
