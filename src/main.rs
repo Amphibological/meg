@@ -51,14 +51,21 @@ fn main() -> std::io::Result<()> {
     let mut ir_generator = ir::IRGenerator::new(&unwrapped, errors.borrow_mut());
     let results = ir_generator.go();
     println!("{:#?}", results);
-    drop(ir_generator);
+    // drop(ir_generator);
 
     println!("IR generation errors:\n");
-    for error in &errors.borrow().errors {
+    let errors = ir_generator.errors;
+    for error in &errors.errors {
         println!("{:?}", error);
     }
 
-    // TODO: more here...
+    println!("Interpreter output:\n");
+    let mut interpreter = interpreter::Interpreter::new(&mut ir_generator.env, 1);
+    interpreter.go();
+
+    for item in interpreter.stack {
+        println!("{:?}", item);
+    }
 
     Ok(())
 }

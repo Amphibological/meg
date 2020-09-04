@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CompareType {
     EQ,
     NE,
@@ -22,7 +22,7 @@ pub enum CompareType {
     GE,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InstructionKind {
     ConstBool(bool),
     ConstInt(i128),
@@ -48,28 +48,33 @@ pub enum InstructionKind {
     GetFunction(usize),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Instruction {
-    kind: InstructionKind,
-    constant: bool,
+    pub kind: InstructionKind,
+    pub constant: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BasicBlock {
-    id: usize,
-    instructions: Vec<Instruction>,
+    pub id: usize,
+    pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Function {
-    id: usize,
-    args: usize,
-    retvals: usize,
-    blocks: Vec<BasicBlock>,
+    pub id: usize,
+    pub args: usize,
+    pub retvals: usize,
+    pub blocks: Vec<BasicBlock>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
+    Bool(bool),
+    Integer(i128),
+    Float(f64),
+    String(String),
+
     Function(Function),
 }
 
@@ -77,14 +82,20 @@ pub type Scope = HashMap<String, Value>;
 
 #[derive(Debug)]
 pub struct Environment {
-    scopes: Vec<Scope>,
-    functions: HashMap<usize, Function>, // TODO this could probably be optimized down to a Vec??
+    pub scopes: Vec<Scope>,
+    pub functions: HashMap<usize, Function>, // TODO this could probably be optimized down to a Vec??
+}
+
+impl Environment {
+    pub fn current_scope(&mut self) -> &mut Scope {
+        self.scopes.last_mut().unwrap()
+    }
 }
 
 pub struct IRGenerator<'i> {
     ast: &'i NodeContext,
-    errors: RefMut<'i, Errors>,
-    env: Environment,
+    pub errors: RefMut<'i, Errors>,
+    pub env: Environment,
     next_func_id: usize,
     next_block_id: usize,
 }

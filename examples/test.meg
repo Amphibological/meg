@@ -1,3 +1,3 @@
-foo: i32 = fn() void {
-    debug("Hi")
+foo: i32 = fn() i32 {
+    2 + 3 - 44
 }
