@@ -44,6 +44,8 @@ pub enum InstructionKind {
     Call,
     BranchIf(usize, usize),
     Jump(usize),
+
+    GetFunction(usize),
 }
 
 #[derive(Debug)]
@@ -60,7 +62,7 @@ pub struct BasicBlock {
 
 #[derive(Debug)]
 pub struct Function {
-    name: String,
+    id: usize,
     args: usize,
     retvals: usize,
     blocks: Vec<BasicBlock>,
@@ -76,12 +78,14 @@ pub type Scope = HashMap<String, Value>;
 #[derive(Debug)]
 pub struct Environment {
     scopes: Vec<Scope>,
+    functions: HashMap<usize, Function>, // TODO this could probably be optimized down to a Vec??
 }
 
 pub struct IRGenerator<'i> {
     ast: &'i NodeContext,
     errors: RefMut<'i, Errors>,
     env: Environment,
+    next_func_id: usize,
     next_block_id: usize,
 }
 
@@ -92,20 +96,23 @@ impl<'i> IRGenerator<'i> {
             errors,
             env: Environment {
                 scopes: vec![new_global_scope()],
+                functions: HashMap::new(),
             },
+            next_func_id: 0,
             next_block_id: 0,
         }
     }
 
     pub fn go(&mut self) -> &Environment {
-        let prog_id = self.get_next_block_id();
+        let block_id = self.get_next_block_id();
+        let func_id = self.get_next_func_id();
         self.node(&mut Function {
-            name: "program".to_owned(), 
+            id: func_id,
             args: 0,
             retvals: 0,
             blocks: vec![
                 BasicBlock {
-                    id: prog_id,
+                    id: block_id,
                     instructions: vec![],
                 }
             ],
@@ -307,9 +314,8 @@ impl<'i> IRGenerator<'i> {
         body: &Box<NodeContext>,
         constant: bool
     ) {
-        let name = "foo";
         let mut new_func = Function {
-            name: name.to_owned(),
+            id: self.get_next_func_id(),
             args: arg_types.len(),
             retvals: ret_types.len(),
             blocks: vec![
@@ -325,15 +331,15 @@ impl<'i> IRGenerator<'i> {
         };
 
         self.node(&mut new_func, body);
-        let scope_index = self.env.scopes.len() - 1;
-        self.env.scopes[scope_index].insert(new_func.name.clone(), Value::Function(new_func));
 
         func.blocks.last_mut().unwrap().instructions.push(
             Instruction {
-                kind: InstructionKind::Push(name.to_owned()),
+                kind: InstructionKind::GetFunction(new_func.id),
                 constant,
             }
         );
+
+        self.env.functions.insert(new_func.id, new_func);
     }
 
     fn if_expression(
@@ -406,6 +412,11 @@ impl<'i> IRGenerator<'i> {
     fn get_next_block_id(&mut self) -> usize {
         self.next_block_id += 1;
         self.next_block_id - 1
+    }
+
+    fn get_next_func_id(&mut self) -> usize {
+        self.next_func_id += 1;
+        self.next_func_id - 1
     }
 }
 
