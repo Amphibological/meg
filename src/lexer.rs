@@ -2,6 +2,7 @@
 
 use std::cell::RefMut;
 use std::iter::FromIterator;
+use std::fmt;
 
 use crate::errors::Errors;
 
@@ -35,11 +36,20 @@ pub enum TokenKind {
     EOF,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub value: String,
     pub position: usize,
+}
+
+impl fmt::Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?} \"{}\" @ position {}", self.kind, match self.kind {
+            TokenKind::Newline => "\\n".to_owned(),
+            _ => self.value.clone(),
+        }, self.position) 
+    } 
 }
 
 #[derive(PartialEq)]

@@ -2,6 +2,7 @@
 
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::fmt;
 
 use crate::{
     errors::Errors,
@@ -48,10 +49,16 @@ pub enum InstructionKind {
     GetFunction(usize),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Instruction {
     pub kind: InstructionKind,
     pub constant: bool,
+}
+
+impl fmt::Debug for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}{}", self.kind, if self.constant { " constant" } else { "" })
+    } 
 }
 
 #[derive(Debug, Clone)]

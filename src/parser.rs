@@ -1,6 +1,7 @@
 //! This module converts the token stream from the lexer into an AST.
 
 use std::cell::RefMut;
+use std::fmt;
 
 use crate::{
     errors::Errors,
@@ -77,11 +78,16 @@ pub enum Node {
     }
 }
 
-#[derive(Debug)]
 pub struct NodeContext {
     pub node: Node,
     pub position: usize,
     pub constant: bool,
+}
+
+impl fmt::Debug for NodeContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(position {}{}) {:#?}", self.position, if self.constant { ", constant" } else { "" }, self.node) 
+    } 
 }
 
 pub struct Parser<'p> {
