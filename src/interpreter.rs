@@ -14,7 +14,7 @@ pub struct Interpreter<'i> {
 
 impl<'i> Interpreter<'i> {
     pub fn new(env: &'i mut Environment, func_id: usize) -> Self {
-        let first_block = env.functions[&func_id].blocks[0].id;
+        let first_block = env.functions[&func_id].blocks[1].id;
 
         Interpreter {
             env,
@@ -68,6 +68,7 @@ impl<'i> Interpreter<'i> {
                 Test(compare_type) => self.test(compare_type),
 
                 Call => self.call(),
+                Return => self.return_(),
                 BranchIf(then_block, else_block) => self.branch_if(then_block, else_block),
                 Jump(block) => self.jump(block),
 
@@ -260,6 +261,10 @@ impl<'i> Interpreter<'i> {
     }
 
     fn call(&mut self) {}
+
+    fn return_(&mut self) {
+        self.finished = true;
+    }
 
     fn branch_if(&mut self, then_block: &usize, else_block: &usize) {
         match self.stack.pop().unwrap() {

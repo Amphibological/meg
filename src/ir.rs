@@ -43,6 +43,7 @@ pub enum InstructionKind {
     Test(CompareType),
 
     Call,
+    Return,
     BranchIf(usize, usize),
     Jump(usize),
 
@@ -61,18 +62,38 @@ impl fmt::Debug for Instruction {
     } 
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct BasicBlock {
     pub id: usize,
     pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug, Clone)]
+impl fmt::Debug for BasicBlock {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}:", self.id)?;
+        for ins in &self.instructions {
+            writeln!(f, "{:?}", ins)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
 pub struct Function {
     pub id: usize,
     pub args: usize,
     pub retvals: usize,
     pub blocks: Vec<BasicBlock>,
+}
+
+impl fmt::Debug for Function {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "function {} (args: {}, retvals: {})", self.id, self.args, self.retvals)?;
+        for block in &self.blocks {
+            writeln!(f, "{:?}", block)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -122,8 +143,8 @@ impl<'i> IRGenerator<'i> {
     }
 
     pub fn go(&mut self) -> &Environment {
-        let block_id = self.get_next_block_id();
-        let func_id = self.get_next_func_id();
+        let block_id = 0; //self.get_next_block_id();
+        let func_id = 0; //self.get_next_func_id();
         self.node(&mut Function {
             id: func_id,
             args: 0,
@@ -349,6 +370,13 @@ impl<'i> IRGenerator<'i> {
         };
 
         self.node(&mut new_func, body);
+
+        new_func.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::Return,
+                constant,
+            }
+        );
 
         func.blocks.last_mut().unwrap().instructions.push(
             Instruction {

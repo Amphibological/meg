@@ -60,7 +60,7 @@ fn main() -> std::io::Result<()> {
     }
 
     println!("Interpreter output:\n");
-    let mut interpreter = interpreter::Interpreter::new(&mut ir_generator.env, 1);
+    let mut interpreter = interpreter::Interpreter::new(&mut ir_generator.env, 0);
     interpreter.go();
 
     for item in interpreter.stack {
