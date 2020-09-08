@@ -1,8 +1,7 @@
 //! The main entry point of Meg
 //! For now it is mostly for debugging purposes
 
-mod errors;
-mod lexer;
+mod errors; mod lexer;
 mod parser;
 mod ir;
 mod interpreter;
@@ -50,8 +49,11 @@ fn main() -> std::io::Result<()> {
     let unwrapped = results.unwrap();
     let mut ir_generator = ir::IRGenerator::new(&unwrapped, errors.borrow_mut());
     let results = ir_generator.go();
-    println!("{:#?}", results);
+    //println!("{:#?}", results);
     // drop(ir_generator);
+    for func in results.functions.values() {
+        println!("{:?}", func);
+    }
 
     println!("IR generation errors:\n");
     let errors = ir_generator.errors;

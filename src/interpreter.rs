@@ -1,14 +1,34 @@
 //! This module interpretes Meg IR into constant expressions for CTFE
 
-use crate::ir::{Environment, Value, InstructionKind, CompareType};
+use std::fmt;
+
+use crate::ir::{
+    CompareType,
+    Environment,
+    Function,
+    InstructionKind,
+    Value,
+};
+
+#[derive(Copy, Clone)]
+pub struct Location {
+    function: usize,
+    block: usize,
+    instruction: usize,
+}
+
+impl fmt::Debug for Location {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "function {}, block {}, line {}", self.function, self.block, self.instruction)
+    }
+}
 
 pub struct Interpreter<'i> {
     env: &'i mut Environment,
     pub stack: Vec<Value>,
+    call_stack: Vec<Location>,
 
-    current_function: usize,
-    current_block: usize,
-    current_instruction: usize,
+    current: Location,
     finished: bool,
 }
 
@@ -19,21 +39,26 @@ impl<'i> Interpreter<'i> {
         Interpreter {
             env,
             stack: vec![],
+            call_stack: vec![],
 
-            current_function: func_id,
-            current_block: first_block,
-            current_instruction: 0,
+            current: Location {
+                function: func_id,
+                block: first_block,
+                instruction: 0,
+            },
             finished: false,
         } 
     }
 
     fn advance(&mut self) {
-        self.current_instruction += 1;
-        if self.current_instruction >= self.env.functions[&self.current_function].blocks[self.current_block].instructions.len() {
-            self.current_block += 1;
+        dbg!("advancing");
+        self.current.instruction += 1;
+        if self.current.instruction >= self.env.functions[&self.current.function].blocks[self.current.block].instructions.len() {
+            self.current.block += 1;
+            self.current.instruction = 0;
         }
 
-        if self.current_block >= self.env.functions[&self.current_function].blocks.len() {
+        if self.current.block >= self.env.functions[&self.current.function].blocks.len() {
             self.finished = true;
         }
     }
@@ -44,10 +69,12 @@ impl<'i> Interpreter<'i> {
             let ins = if self.finished {
                 return;
             } else {
-                &self.env.functions[&self.current_function]
-                    .blocks[self.current_block]
-                    .instructions[self.current_instruction]
+                dbg!(self.current);
+                &self.env.functions[&self.current.function]
+                    .blocks[self.current.block]
+                    .instructions[self.current.instruction]
             };
+            dbg!(ins);
             
             match &ins.kind.clone() {
                 ConstBool(value) => self.const_bool(value),
@@ -103,7 +130,6 @@ impl<'i> Interpreter<'i> {
     }
 
     fn push(&mut self, name: &str) {
-        dbg!(name);
         self.stack.push(self.env.current_scope()[name].clone());
         self.advance();
     }
@@ -260,31 +286,42 @@ impl<'i> Interpreter<'i> {
         self.advance();
     }
 
-    fn call(&mut self) {}
+    fn call(&mut self) {
+        self.call_stack.push(self.current);
+        let func = self.stack.pop().unwrap();
+        if let Value::Function(Function { id, .. }) = func {
+            self.current.function = id;
+            self.current.block = self.env.functions[&id].blocks.last().unwrap().id;
+            self.current.instruction = 0;
+        }
+    }
 
     fn return_(&mut self) {
-        self.finished = true;
+        if self.call_stack.len() > 0 {
+            let ret_location = self.call_stack.pop().unwrap();
+            self.current = ret_location;
+        } else {
+            self.finished = true;
+        }
     }
 
     fn branch_if(&mut self, then_block: &usize, else_block: &usize) {
         match self.stack.pop().unwrap() {
-            Value::Bool(true) => self.current_block = *then_block,
-            Value::Bool(false) => self.current_block = *else_block,
+            Value::Bool(true) => self.current.block = *then_block,
+            Value::Bool(false) => self.current.block = *else_block,
             _ => panic!(),
         };
-        self.current_instruction = 0;
+        self.current.instruction = 0;
     }
 
     fn jump(&mut self, block: &usize) {
-        self.current_block = *block;
-        self.current_instruction = 0;
+        self.current.block = *block;
+        self.current.instruction = 0;
     }
 
-    fn get_function(&mut self, func: &usize) {}
+    fn get_function(&mut self, func: &usize) {
+        self.stack.push(Value::Function(self.env.functions[func].clone()));
+        self.advance();
+    }
 }
-
-
-
-
-
 

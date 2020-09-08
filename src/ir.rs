@@ -143,19 +143,39 @@ impl<'i> IRGenerator<'i> {
     }
 
     pub fn go(&mut self) -> &Environment {
-        let block_id = 0; //self.get_next_block_id();
-        let func_id = 0; //self.get_next_func_id();
-        self.node(&mut Function {
-            id: func_id,
+        let mut top_level_fn = Function {
+            id: self.get_next_func_id(),
             args: 0,
             retvals: 0,
             blocks: vec![
                 BasicBlock {
-                    id: block_id,
+                    id: self.get_next_block_id(),
                     instructions: vec![],
-                }
+                },
+                BasicBlock {
+                    id: self.get_next_block_id(),
+                    instructions: vec![],
+                },
             ],
-        }, self.ast);
+        };
+
+        self.node(&mut top_level_fn, self.ast);
+
+        top_level_fn.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::Push("main".to_owned()),
+                constant: false,
+            }
+        );
+
+        top_level_fn.blocks.last_mut().unwrap().instructions.push(
+            Instruction {
+                kind: InstructionKind::Call,
+                constant: false,
+            }
+        );
+
+        self.env.functions.insert(0, top_level_fn);
 
         &self.env
     }
@@ -470,6 +490,7 @@ fn new_global_scope() -> Scope {
     let mut scope = HashMap::new();
     scope.insert("true".to_owned(), Value::Bool(true));
     scope.insert("false".to_owned(), Value::Bool(false));
+    scope.insert("i32".to_owned(), Value::Bool(false));
     scope
 }
 
